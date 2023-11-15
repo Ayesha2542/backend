@@ -5,12 +5,9 @@ const customerSchema = customReferences.mongoose.Schema({
   email: String,
   password: String,
   profileImage: String, // Assuming this is the path to the profile image
-  securityQuestions: [
-    {
-      question: String, // The question for security
-      answer: String, // The answer to the security question
-    },
-  ],
+  securityQuestions: {
+    type:Array
+  },
   phoneNumber:String,
 });
 
