@@ -1,20 +1,11 @@
 const customReferences = require('../references/customReferences');
 
 const customerSchema=require('../Schema/customerSchema');
-const CustomerModel =customReferences.mongoose.model('customers', customerSchema.customerSchema);
+module.exports =customReferences.mongoose.model('customers', customerSchema.customerSchema);
 
-// const students= new studentModel(
-//     {
-//     name:,
-//     email:"",
-//   password:,
-  
+// module.exports={
+//   CustomerModel:CustomerModel
 // }
-// );
-
-module.exports={
-  CustomerModel:CustomerModel
-}
 
 // const userSchema = customReferences.mongoose.Schema({
 //   name: String,
