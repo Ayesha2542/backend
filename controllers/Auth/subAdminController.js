@@ -3,9 +3,10 @@ const subAdminModel=require("../../model/subAdminModel");
 const formData = customReferences.multer();
 
 customReferences.app.post("/addSubAdmin", formData.none(), async (request, response) => {
-  try {
-    const { name, email } = request.body;
+  const { name, email } = request.body;
     console.log("Received data:", { name, email,});
+  try {
+    
     
     // Check if a user with the same email already exists
     const existingUser = await subAdminModel.findOne({ email:email });
