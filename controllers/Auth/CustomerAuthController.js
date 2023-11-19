@@ -117,6 +117,7 @@ console.log('registeredUser',user)
 );
 
 
+
 //++++++++++++++++++++++++forget password++++++++++++++++++++++++++++++++++++\
 
 customReferences.app.post("/forgetPassword", formData.none(), async (request, response) => {
@@ -149,7 +150,60 @@ console.log('user find hua',user)
       success: true,
       message: "Security answers matched. Proceed to change password.",
     });
+
+customReferences.app.post("/viewAllCustomers", async (request, response) => {
+  try {
+    const users = await customerModel.find(); // Retrieve all Customers from MongoDB
+    response.json(users);
   } catch (error) {
     response.status(500).json({ error: "Internal server error." });
   }
 });
+
+customReferences.app.delete("/deleteCustomer/:customerId", async (request, response) => {
+  try {
+    const { customerId } = request.params;
+
+    // Find and delete the customer by ID
+    const deletedCustomer = await customerModel.findByIdAndDelete(customerId);
+
+    if (deletedCustomer) {
+      response.json({ success: true, message: "Customer deleted successfully." });
+    } else {
+      response.json({ success: false, message: "Customer not found." });
+    }
+  } catch (error) {
+    response.status(500).json({ error: "Internal server error." });
+  }
+});
+
+
+customReferences.app.put("/toggleUserStatus/:userId", async (request, response) => {
+  try {
+    const { userId } = request.params;
+
+    // Find the user by ID
+    const user = await customerModel.findById(userId);
+
+    if (!user) {
+      return response.json({ success: false, message: "User not found." });
+    }
+
+    // Toggle the user status between 0 and 1
+    user.status = user.status === 1 ? 0 : 1;
+
+    // Save the updated user
+    const updatedUser = await user.save();
+
+    response.json({ success: true, message: "User status updated successfully.", updatedUser });
+
+  } catch (error) {
+    response.status(500).json({ error: "Internal server error." });
+  }
+});
+
+
+
+
+
+
