@@ -88,7 +88,6 @@ customReferences.app.post(
   customerProfileUploadMW,
   async (req, res) => {
     console.log("profileData", req.body);
-    console.log("profileData", req.body);
     const { securityQuestions,_id, customerPhoneNumber } = req.body;
     const imgName = req.file.filename;
     const sq = JSON.parse(securityQuestions);
@@ -105,9 +104,9 @@ customReferences.app.post(
         },
         { new: true }
       );
-
+console.log('registeredUser',user)
       if (user) {
-        res.json({ message: "Data saved successfully" });
+        res.json({ message: "Data saved successfully" ,registeredUser:user});
       } else {
         res.status(500).json({ error: "Failed to save user data" });
       }
@@ -116,3 +115,41 @@ customReferences.app.post(
     }
   }
 );
+
+
+//++++++++++++++++++++++++forget password++++++++++++++++++++++++++++++++++++\
+
+customReferences.app.post("/forgetPassword", formData.none(), async (request, response) => {
+  try {
+    const { email, firstSecurityAnswer, secondSecurityAnswer } = request.body;
+    console.log('body main jo data aya',request.body)
+    // Check if a user with the provided email exists
+    const user = await customerModel.findOne({ email: email });
+console.log('user find hua',user)
+    if (!user) {
+      return response.json({
+        success: false,
+        message: "User not found with the provided email.",
+      });
+    }
+
+    // Check if security answers match
+    if (
+      user.securityQuestions[0].answer !== firstSecurityAnswer ||
+      user.securityQuestions[1].answer !== secondSecurityAnswer
+    ) {
+      return response.json({
+        success: false,
+        message: "Security answers do not match.",
+      });
+    }
+
+    // If everything is correct, send a success response
+    response.json({
+      success: true,
+      message: "Security answers matched. Proceed to change password.",
+    });
+  } catch (error) {
+    response.status(500).json({ error: "Internal server error." });
+  }
+});
