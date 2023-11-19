@@ -120,13 +120,16 @@ console.log('registeredUser',user)
 
 //++++++++++++++++++++++++forget password++++++++++++++++++++++++++++++++++++\
 
-customReferences.app.post("/forgetPassword", formData.none(), async (request, response) => {
+// Assume you have an express app instance
+const app = customReferences.app;
+
+app.post("/forgetPassword", formData.none(), async (request, response) => {
   try {
     const { email, firstSecurityAnswer, secondSecurityAnswer } = request.body;
-    console.log('body main jo data aya',request.body)
+    
     // Check if a user with the provided email exists
     const user = await customerModel.findOne({ email: email });
-console.log('user find hua',user)
+
     if (!user) {
       return response.json({
         success: false,
@@ -150,6 +153,11 @@ console.log('user find hua',user)
       success: true,
       message: "Security answers matched. Proceed to change password.",
     });
+  } catch (error) {
+    response.status(500).json({ error: "Internal server error." });
+  }
+});
+
 
 customReferences.app.post("/viewAllCustomers", async (request, response) => {
   try {
