@@ -88,7 +88,6 @@ customReferences.app.post(
   customerProfileUploadMW,
   async (req, res) => {
     console.log("profileData", req.body);
-    console.log("profileData", req.body);
     const { securityQuestions,_id, customerPhoneNumber } = req.body;
     const imgName = req.file.filename;
     const sq = JSON.parse(securityQuestions);
@@ -105,9 +104,9 @@ customReferences.app.post(
         },
         { new: true }
       );
-
+console.log('registeredUser',user)
       if (user) {
-        res.json({ message: "Data saved successfully" });
+        res.json({ message: "Data saved successfully" ,registeredUser:user});
       } else {
         res.status(500).json({ error: "Failed to save user data" });
       }
@@ -116,6 +115,49 @@ customReferences.app.post(
     }
   }
 );
+
+
+
+//++++++++++++++++++++++++forget password++++++++++++++++++++++++++++++++++++\
+
+// Assume you have an express app instance
+const app = customReferences.app;
+
+app.post("/forgetPassword", formData.none(), async (request, response) => {
+  try {
+    const { email, firstSecurityAnswer, secondSecurityAnswer } = request.body;
+    
+    // Check if a user with the provided email exists
+    const user = await customerModel.findOne({ email: email });
+
+    if (!user) {
+      return response.json({
+        success: false,
+        message: "User not found with the provided email.",
+      });
+    }
+
+    // Check if security answers match
+    if (
+      user.securityQuestions[0].answer !== firstSecurityAnswer ||
+      user.securityQuestions[1].answer !== secondSecurityAnswer
+    ) {
+      return response.json({
+        success: false,
+        message: "Security answers do not match.",
+      });
+    }
+
+    // If everything is correct, send a success response
+    response.json({
+      success: true,
+      message: "Security answers matched. Proceed to change password.",
+    });
+  } catch (error) {
+    response.status(500).json({ error: "Internal server error." });
+  }
+});
+
 
 customReferences.app.post("/viewAllCustomers", async (request, response) => {
   try {
@@ -162,10 +204,14 @@ customReferences.app.put("/toggleUserStatus/:userId", async (request, response) 
     const updatedUser = await user.save();
 
     response.json({ success: true, message: "User status updated successfully.", updatedUser });
+
   } catch (error) {
     response.status(500).json({ error: "Internal server error." });
   }
 });
+
+
+
 
 
 
