@@ -34,3 +34,35 @@ customReferences.app.post(
   }
 );
 
+customReferences.app.post("/viewAllProducts", async (req, res) => {
+  try {
+    const allProducts = await productModel.find();
+  //   res.json(allCategories)
+    console.log("++++++++++++++++++++++++++++")
+    console.log(allProducts);
+    console.log("++++++++++++++++++++++++++++")
+   res.json(allProducts)
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ allProducts: [] });
+  }
+});
+
+
+customReferences.app.delete("/deleteProduct/:delId", async (req, res) => {
+  try {
+      const {delId} = req.params;
+    const result = await productModel.findByIdAndDelete(delId);
+    console.log(".......................")
+    console.log(result);
+    console.log(".......................")    
+    if (result) {
+      res.json({ success: true, message: "Customer deleted successfully." });
+    } else {
+      res.json({ success: false, message: "Customer not found." });
+  }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ update: false });
+  }
+});
