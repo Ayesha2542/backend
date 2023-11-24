@@ -2,19 +2,20 @@ const customReferences = require("../references/customReferences");
 const productModel=require("../model/productModel");
 const formData = customReferences.multer();
 const bcrypt = require("bcrypt");
-const customerProfileUploadMW=require('../MiddleWare/customerProfileUploadMW')
+const productPicUploadMW=require('../MiddleWare/productPicUploadMW')
 
 customReferences.app.post(
   "/addProduct",
-  formData.none(),
+  productPicUploadMW,
   async (request, response) => {
     try {
       const { title,  description, price } = request.body;
       console.log("Received data:", { title, description, price });
-      
+      const imgName = request.file.filename
 
       // Create a new product
       const newProduct = new productModel({
+        productImage: `/productPic/${imgName}`,
         title,
         description,
         price,

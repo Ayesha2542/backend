@@ -7,6 +7,7 @@ const root=require('../rootPath')
 app.use(cors());
 app.use(express.static(root+'/public/assets/images'));
 app.use('/customerProfiles',express.static('customerProfiles'));
+app.use('/productPic',express.static('productPic'));
 app.use('/Categories',express.static('Categories'));
 module.exports = {
     mongoose:mongoose,
