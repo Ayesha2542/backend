@@ -4,7 +4,8 @@ const productSchema = customReferences.mongoose.Schema({
   title: String,
   description: String,
   price:String,
- 
+  productImage: String, 
+
 });
 
 module.exports= {
