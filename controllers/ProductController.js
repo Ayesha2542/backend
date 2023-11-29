@@ -6,34 +6,68 @@ const productPicUploadMW=require('../MiddleWare/productPicUploadMW')
 
 customReferences.app.post(
   "/addProduct",
-  productPicUploadMW,
-  async (request, response) => {
+  productPicUploadMW("Products").single("productImage"),
+  async (req, res) => {
     try {
-      const { title,  description, price } = request.body;
-      console.log("Received data:", { title, description, price });
-      const imgName = request.file.filename
 
-      // Create a new product
-      const newProduct = new productModel({
-        productImage: `/productPic/${imgName}`,
-        title,
-        description,
-        price,
+      const result = await productModel.create({
+        title: req.body.title,
+        description: req.body.description,
+        price: req.body.price,
+        productImage: "/Products/" + req.file.filename,
       });
+console.log(result);
 
-      // Save the product to the database
-      const res = await newProduct.save();
-// console.log('product saved or not')
-      if (res) {
-        response.json({ save: true, message: "saved successfully.",newProduct:res });
-      } else {
-        response.json({ save: false, message: "Failed ." });
-      }
-    } catch (error) {
-      response.status(500).json({ error: "Internal server error." });
-    }
-  }
+if (result) {
+  res.send({ added: true });
+} else {
+  res.send({ added: false });
+}
+} catch (error) {
+console.error(error);
+res.status(500).send({ added: false });
+}
+}
 );
+
+customReferences.app.post("/updateProduct", 
+productPicUploadMW("Products").any("productImage"), 
+async (req, res) => {
+  try {
+    console.log(req.files);
+    let obj = {};
+    if (req.files.length > 0) {
+      obj = {
+        _id: req.body.productId,
+        title: req.body.title,
+        description: req.body.description,
+        price: req.body.price,
+        productImage: "/Products/" + req.files[0].filename,  // <-- Add the missing forward slash here
+      };
+    } else {
+      obj = {
+        _id: req.body.productId,
+        title: req.body.title,
+        description: req.body.description,
+        price: req.body.price,
+      };
+    }
+    console.log(req.body);
+    const result = await productModel.updateOne({ _id: obj._id }, { $set: obj });
+
+    if (result.modifiedCount === 1) {
+      res.json({ update: true });
+    } else {
+      res.json({ update: false, message: "No product was updated." });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ update: false, message: "Internal server error." });
+  }
+});
+
+
+
 
 customReferences.app.post("/viewAllProducts", async (req, res) => {
   try {
@@ -58,9 +92,9 @@ customReferences.app.delete("/deleteProduct/:delId", async (req, res) => {
     console.log(result);
     console.log(".......................")    
     if (result) {
-      res.json({ success: true, message: "Customer deleted successfully." });
+      res.json({ success: true, message: "product deleted successfully." });
     } else {
-      res.json({ success: false, message: "Customer not found." });
+      res.json({ success: false, message: "product not found." });
   }
   } catch (error) {
     console.error(error);

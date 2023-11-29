@@ -1,15 +1,21 @@
 const customReferences = require("../references/customReferences");
-const productPicUploadMW = customReferences
+const productPicUploadMW =(folderName)=>{ 
+  return( customReferences
   .multer({
     storage: customReferences.multer.diskStorage({
-      destination: function (req, file, cb) {
-        cb(null, "./public/assets/images/products");
+      destination: (req, file, cb) => {
+        cb(null, `./public/assets/images/${folderName}`);
       },
-      filename: function (req, file, cb) {
+      filename: (req, file, cb) => {
         const now = Date.now();
+        console.log("Multer console")
+        console.log(req.body)
+        console.log("//////////////")
+        console.log(file)
         cb(null, `${file.fieldname}${now}.jpg`);
       },
     }),
   })
-  .single("productImage");
-  module.exports=(productPicUploadMW);
+  )
+}
+module.exports = productPicUploadMW;
