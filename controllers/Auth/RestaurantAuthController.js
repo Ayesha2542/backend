@@ -1,21 +1,38 @@
-
 const customReferences = require("../../references/customReferences");
-const restaurantModel=require("../../model/restaurantModel");
+const restaurantModel = require("../../model/restaurantModel");
 const formData = customReferences.multer();
 const bcrypt = require("bcrypt");
-const customerProfileUploadMW=require('../../MiddleWare/customerProfileUploadMW')
+const customerProfileUploadMW = require('../../MiddleWare/customerProfileUploadMW');
+const restaurantPicMW = require("../../MiddleWare/restaurantPicMW.JS");
 
 customReferences.app.post(
   "/restaurantSignup",
-  formData.none(),
+  restaurantPicMW("Restaurants").single("restuarantImage"),
   async (request, response) => {
     try {
-      const { name, email, password } = request.body;
-      console.log("Received data:", { name, email, password });
-      
-      // Check if a user with the same email already exists
-      const existingUser = await restaurantModel.findOne({ email:email });
-      console.log('check if user exists',existingUser);
+      const { 
+        userName, 
+        userEmail, 
+        userPassword, 
+        restaurantName, 
+        restaurantAddress, 
+        restaurantCnic, 
+        restaurantPhoneNumber, 
+        
+      } = request.body;
+
+      console.log("Received data:", { 
+        userName,
+        userEmail,
+        userPassword,
+        restaurantName, 
+        restaurantAddress, 
+        restaurantCnic, 
+        restaurantPhoneNumber, 
+        screenType 
+      });
+
+      const existingUser = await restaurantModel.findOne({ email: email });
 
       if (existingUser) {
         return response.json({
@@ -23,32 +40,57 @@ customReferences.app.post(
           message: "A user with the same email already exists.",
         });
       }
-      console.log('check if user exists',existingUser);//kuch likha tha many dekha nai?
 
       // Hash the password before saving
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create a new user
-      const newUser = new restaurantModel({
-        name,
-        email,
-        // password
-        password: hashedPassword,
-      });
+      if (screenType === 'Signup') {
+        // Handle signup data
+        // Create a new user
+        const newUser = await restaurantModel.create({
+          userName: userName,
+          userEmail: userEmail,
+          userPassword: hashedPassword,
+        });
 
-      // Save the user to the database
-      const res = await newUser.save();
-// console.log('user saved or not')
-      if (res) {
-        response.json({ save: true, message: "User registered successfully.",newUser:res });
-      } else {
-        response.json({ save: false, message: "Failed to register user." });
+        // Save the user to the database
+        const savedUser = await newUser.save();
+
+        if (savedUser) {
+          response.send({ added: true, newUser: savedUser });
+        } else {
+          response.send({ added: false });
+        }
+      } else if (screenType === 'RestaurantDetail') {
+        // Handle restaurantDetail data
+        // Create a new restaurant
+        const newRestaurant = await restaurantModel.create({
+
+          restaurantName: restaurantName,
+          restaurantCnic: restaurantCnic,
+          restaurantPhoneNumber: restaurantPhoneNumber,
+          restaurantAddress: restaurantAddress,
+          restuarantImage: "/Restaurants/" + request.file.filename,
+        });
+
+        // Save the restaurant to the database
+        const savedRestaurant = await newRestaurant.save();
+
+        if (savedRestaurant) {
+          response.send({ added: true, newRestaurant: savedRestaurant });
+        } else {
+          response.send({ added: false });
+        }
       }
+
     } catch (error) {
-      response.status(500).json({ error: "Internal server error." });
+      console.error(error);
+      response.status(500).send({ added: false, error: error.message });
     }
   }
 );
+
+
 
 customReferences.app.post(
   "/login",
