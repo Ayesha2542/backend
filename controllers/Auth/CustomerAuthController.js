@@ -116,6 +116,75 @@ console.log('registeredUser',user)
   }
 );
 
+//========================update customer profile=======================
+
+customReferences.app.post(
+  "/updateCustomerProfile",
+  formData.none(),
+  // customerProfileUploadMW,
+  async (req, res) => {
+    console.log("profileData", req.body);
+    const { customerName,customerEmail,_id, customerPhoneNumber } = req.body;
+    // const imgName = req.file.filename;
+
+    try {
+      const user = await customerModel.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            name:customerName,
+            // email:customerEmail,
+            // profileImage: `/customerProfiles/${imgName}`,
+            phoneNumber:customerPhoneNumber
+          },
+        },
+        { new: true }
+      );
+console.log('updatedUser',user)
+      if (user) {
+        res.json({ message: "Data saved successfully" ,updatedUser:user});
+      } else {
+        res.status(500).json({ error: "Failed to save user data" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+//========================update customer profile image=======================
+
+customReferences.app.post(
+  "/updateCustomerProfileImage",
+  // formData.none(),
+  customerProfileUploadMW,
+  async (req, res) => {
+    console.log("profileData to update image", req.body);
+    const imgName = req.file.filename;
+    const { _id } = req.body;
+
+
+    try {
+      const user = await customerModel.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            profileImage: `/customerProfiles/${imgName}`,
+          },
+        },
+        { new: true }
+      );
+console.log('updatedUser',user)
+      if (user) {
+        res.json({ message: "Data saved successfully" ,updatedUser:user});
+      } else {
+        res.status(500).json({ error: "Failed to save user data" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 
 //++++++++++++++++++++++++forget password++++++++++++++++++++++++++++++++++++\
