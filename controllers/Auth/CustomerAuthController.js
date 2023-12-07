@@ -115,48 +115,142 @@ console.log('registeredUser',user)
   }
 );
 
+//========================update customer profile=======================
+
+customReferences.app.post(
+  "/updateCustomerProfile",
+  formData.none(),
+  // customerProfileUploadMW,
+  async (req, res) => {
+    console.log("profileData", req.body);
+    const { customerName,customerEmail,_id, customerPhoneNumber } = req.body;
+    // const imgName = req.file.filename;
+
+    try {
+      const user = await customerModel.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            name:customerName,
+            // email:customerEmail,
+            // profileImage: `/customerProfiles/${imgName}`,
+            phoneNumber:customerPhoneNumber
+          },
+        },
+        { new: true }
+      );
+console.log('updatedUser',user)
+      if (user) {
+        res.json({ message: "Data saved successfully" ,updatedUser:user});
+      } else {
+        res.status(500).json({ error: "Failed to save user data" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+//========================update customer profile image=======================
+
+customReferences.app.post(
+  "/updateCustomerProfileImage",
+  // formData.none(),
+  customerProfileUploadMW,
+  async (req, res) => {
+    console.log("profileData to update image", req.body);
+    const imgName = req.file.filename;
+    const { _id } = req.body;
+
+
+    try {
+      const user = await customerModel.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            profileImage: `/customerProfiles/${imgName}`,
+          },
+        },
+        { new: true }
+      );
+console.log('updatedUser',user)
+      if (user) {
+        res.json({ message: "Data saved successfully" ,updatedUser:user});
+      } else {
+        res.status(500).json({ error: "Failed to save user data" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 
 //++++++++++++++++++++++++forget password++++++++++++++++++++++++++++++++++++\
 
-// Assume you have an express app instance
-const app = customReferences.app;
-
-app.post("/forgetPassword", formData.none(), async (request, response) => {
+customReferences.app.post("/forgetPassword", formData.none(), async (req, res) => {
+  console.log(req.body)
+  console.log("signupsq req",JSON.parse(req.body.securityQuestions))
   try {
-    const { email, firstSecurityAnswer, secondSecurityAnswer } = request.body;
-    
-    // Check if a user with the provided email exists
-    const user = await customerModel.findOne({ email: email });
+    const providedAnswers = await JSON.parse(req.body.securityQuestions);
 
-    if (!user) {
-      return response.json({
-        success: false,
-        message: "User not found with the provided email.",
-      });
+    const result = await customerModel.findOne({email:req.body.email});
+
+    if (!result) {
+      return res.json({"matched": false, "error": "User not found"});
     }
+    else{
+    const storedAnswers = result.securityQuestions;
+    console.log("storedAnswer",storedAnswers)
+    const isAnswersMatching = storedAnswers.every((stored, index) =>{
+     return stored.question === providedAnswers[index].question && stored.answer === providedAnswers[index].answer}
+    );
+    console.log(isAnswersMatching)
 
-    // Check if security answers match
-    if (
-      user.securityQuestions[0].answer !== firstSecurityAnswer ||
-      user.securityQuestions[1].answer !== secondSecurityAnswer
-    ) {
-      return response.json({
-        success: false,
-        message: "Security answers do not match.",
-      });
+    if (isAnswersMatching) {
+      // Answers match, proceed with password reset or other actions
+      res.json({"matched": true, "newUser": result});
+    } else {
+      // Answers do not match
+      res.json({"matched": false, "newUser": result});
     }
-
-    // If everything is correct, send a success response
-    response.json({
-      success: true,
-      message: "Security answers matched. Proceed to change password.",
-    });
+    }
   } catch (error) {
-    response.status(500).json({ error: "Internal server error." });
+    console.error("Error:", error);
+    res.status(500).json({"matched": false, "error": "An error occurred"});
   }
 });
 
+//**************************reset password ****************************/
+customReferences.app.post('/resetPassword', formData.none(),async (req, res) => {
+  console.log("resetPassword",req.body)
+  const { email,password } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  try {
+      const existingUser = await customerModel.findOne({email:req.body.email});
+      console.log("existuserchngepswrd",existingUser)
+      if (!existingUser) {
+    return res.json({
+      "login": false,
+      message: "This user is not available.",
+    });
+  }else{
+    const user = await customerModel.findOneAndUpdate(
+      { email },
+      { $set: { password:hashedPassword } },
+      { new: true }
+    );
+    console.log("chngepassword",user)
+    if (!user) {
+      return res.status(404).json({"login": false, message: 'User not found' });
+    }
+    res.status(200).json({"login": true, message: 'Password updated successfully',updated:user });
+    }
+  } catch (error) {
+    res.status(500).json({ "login": false,message: 'An error occurred' });
+  }
+});
 
 customReferences.app.post("/viewAllCustomers", async (request, response) => {
   try {
