@@ -1,38 +1,22 @@
 const customReferences = require("../../references/customReferences");
 const restaurantModel = require("../../model/restaurantModel");
-const formData = customReferences.multer();
 const bcrypt = require("bcrypt");
-const customerProfileUploadMW = require('../../MiddleWare/customerProfileUploadMW');
-const restaurantPicMW = require("../../MiddleWare/restaurantPicMW.JS");
+const formData = customReferences.multer();
+ const restaurantPicMW = require("../../MiddleWare/restaurantPicMW");
 
 customReferences.app.post(
   "/restaurantSignup",
-  restaurantPicMW("Restaurants").single("restuarantImage"),
+  formData.none(),
   async (request, response) => {
     try {
-      const { 
-        userName, 
-        userEmail, 
-        userPassword, 
-        restaurantName, 
-        restaurantAddress, 
-        restaurantCnic, 
-        restaurantPhoneNumber, 
-        
-      } = request.body;
+      const { userName, userEmail, userPassword } = request.body;
+      console.log("Received data:", { userName, userEmail, userPassword });
 
-      console.log("Received data:", { 
-        userName,
-        userEmail,
-        userPassword,
-        restaurantName, 
-        restaurantAddress, 
-        restaurantCnic, 
-        restaurantPhoneNumber, 
-        screenType 
+      // Check if a user with the same email already exists
+      const existingUser = await restaurantModel.findOne({
+        userEmail: userEmail,
       });
-
-      const existingUser = await restaurantModel.findOne({ email: email });
+      console.log("check if user exists", existingUser);
 
       if (existingUser) {
         return response.json({
@@ -40,72 +24,97 @@ customReferences.app.post(
           message: "A user with the same email already exists.",
         });
       }
+      console.log("check if user exists", existingUser); 
 
       // Hash the password before saving
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(userPassword, 10);
 
-      if (screenType === 'Signup') {
-        // Handle signup data
-        // Create a new user
-        const newUser = await restaurantModel.create({
-          userName: userName,
-          userEmail: userEmail,
-          userPassword: hashedPassword,
+      // Create a new user
+      const newUser = new restaurantModel({
+        userName,
+        userEmail,
+        userPassword: hashedPassword,
+      });
+
+      // Save the user to the database
+      const res = await newUser.save();
+      // console.log('user saved or not')
+      if (res) {
+        response.json({
+          save: true,
+          message: "User registered successfully.",
+          newUser: res,
         });
-
-        // Save the user to the database
-        const savedUser = await newUser.save();
-
-        if (savedUser) {
-          response.send({ added: true, newUser: savedUser });
-        } else {
-          response.send({ added: false });
-        }
-      } else if (screenType === 'RestaurantDetail') {
-        // Handle restaurantDetail data
-        // Create a new restaurant
-        const newRestaurant = await restaurantModel.create({
-
-          restaurantName: restaurantName,
-          restaurantCnic: restaurantCnic,
-          restaurantPhoneNumber: restaurantPhoneNumber,
-          restaurantAddress: restaurantAddress,
-          restuarantImage: "/Restaurants/" + request.file.filename,
-        });
-
-        // Save the restaurant to the database
-        const savedRestaurant = await newRestaurant.save();
-
-        if (savedRestaurant) {
-          response.send({ added: true, newRestaurant: savedRestaurant });
-        } else {
-          response.send({ added: false });
-        }
+      } else {
+        response.json({ save: false, message: "Failed to register user." });
       }
-
     } catch (error) {
-      console.error(error);
-      response.status(500).send({ added: false, error: error.message });
+      response.status(500).json({ error: "Internal server error." });
     }
   }
 );
 
+// ********************************upload profile and security questions******************************************
 
+// Route to save security questions and uploaded profile image
+customReferences.app.post(
+  "/restaurantDetail",
+  restaurantPicMW("Restaurants").single("restaurantImage"), // Check the field name here
+  async (req, res) => {
+    const {
+      restaurantName,
+      restaurantCnic,
+      restaurantPhoneNumber,
+      restaurantAddress,
+      restaurantCategories,
+      _id,
+  } = req.body;
+      const imageName= req.file.filename;
+      const rc = JSON.parse(restaurantCategories);
+    console.log("registeredUser", req.body);
+
+    try {
+      const user = await restaurantModel.findOneAndUpdate(
+        { _id},
+        {
+          $set: {
+            restaurantImage:`/Restaurants/ ${imageName}`,
+            restaurantName,
+            restaurantCnic,
+            restaurantPhoneNumber,
+            restaurantAddress,
+            restaurantCategories:rc,
+           
+          },
+        },
+        { new: true }
+      );
+      console.log("777777777777777777777777777")
+    console.log(user)
+      if (user) {
+        res.json({ message: "Data saved successfully", registeredUser: user });
+      } else {
+        res.status(500).json({ error: "Failed to save user data" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 customReferences.app.post(
-  "/login",
+  "/restaurantLogin",
   formData.none(),
   async (request, response) => {
     try {
-      const { email, password } = request.body;
-console.log("lodin req email",email)
-console.log("lodin req pass",password)
-   // Find the user by emai
-      const user = await restaurantModel.findOne({email:email}); 
-console.log("user",user)
+      const { userEmail, userPassword } = request.body;
+
+      // Find the user by emai
+      const user = await restaurantModel.findOne({ userEmail: userEmail});
+      console.log("user", user);
       if (user) {
         // Compare the provided password with the stored hashed password
-        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        const isPasswordMatch = await bcrypt.compare(userPassword, user.userPassword);
 
         if (isPasswordMatch) {
           response.json({ match: true, loggedInUser: user });
@@ -120,46 +129,6 @@ console.log("user",user)
     }
   }
 );
-// ********************************upload profile and security questions******************************************
-
-
-
-// Route to save security questions and uploaded profile image
-customReferences.app.post(
-  "/uploadProfile",
-  customerProfileUploadMW,
-  async (req, res) => {
-    console.log("profileData", req.body);
-    const { securityQuestions,_id, customerPhoneNumber } = req.body;
-    const imgName = req.file.filename;
-    const sq = JSON.parse(securityQuestions);
-
-    try {
-      const user = await restaurantModel.findOneAndUpdate(
-        { _id },
-        {
-          $set: {
-            profileImage: `/customerProfiles/${imgName}`,
-            securityQuestions: sq,
-            phoneNumber:customerPhoneNumber
-          },
-        },
-        { new: true }
-      );
-console.log('registeredUser',user)
-      if (user) {
-        res.json({ message: "Data saved successfully" ,registeredUser:user});
-      } else {
-        res.status(500).json({ error: "Failed to save user data" });
-      }
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-);
-
-
-
 //++++++++++++++++++++++++forget password++++++++++++++++++++++++++++++++++++\
 
 // Assume you have an express app instance
@@ -168,7 +137,7 @@ const app = customReferences.app;
 app.post("/forgetPassword", formData.none(), async (request, response) => {
   try {
     const { email, firstSecurityAnswer, secondSecurityAnswer } = request.body;
-    
+
     // Check if a user with the provided email exists
     const user = await restaurantModel.findOne({ email: email });
 
@@ -200,7 +169,6 @@ app.post("/forgetPassword", formData.none(), async (request, response) => {
   }
 });
 
-
 customReferences.app.post("/viewAllCustomers", async (request, response) => {
   try {
     const users = await restaurantModel.find(); // Retrieve all Customers from MongoDB
@@ -210,50 +178,57 @@ customReferences.app.post("/viewAllCustomers", async (request, response) => {
   }
 });
 
-customReferences.app.delete("/deleteCustomer/:customerId", async (request, response) => {
-  try {
-    const { customerId } = request.params;
+customReferences.app.delete(
+  "/deleteCustomer/:customerId",
+  async (request, response) => {
+    try {
+      const { customerId } = request.params;
 
-    // Find and delete the customer by ID
-    const deletedCustomer = await restaurantModel.findByIdAndDelete(customerId);
+      // Find and delete the customer by ID
+      const deletedCustomer = await restaurantModel.findByIdAndDelete(
+        customerId
+      );
 
-    if (deletedCustomer) {
-      response.json({ success: true, message: "Customer deleted successfully." });
-    } else {
-      response.json({ success: false, message: "Customer not found." });
+      if (deletedCustomer) {
+        response.json({
+          success: true,
+          message: "Customer deleted successfully.",
+        });
+      } else {
+        response.json({ success: false, message: "Customer not found." });
+      }
+    } catch (error) {
+      response.status(500).json({ error: "Internal server error." });
     }
-  } catch (error) {
-    response.status(500).json({ error: "Internal server error." });
   }
-});
+);
 
+customReferences.app.put(
+  "/toggleUserStatus/:userId",
+  async (request, response) => {
+    try {
+      const { userId } = request.params;
 
-customReferences.app.put("/toggleUserStatus/:userId", async (request, response) => {
-  try {
-    const { userId } = request.params;
+      // Find the user by ID
+      const user = await restaurantModel.findById(userId);
 
-    // Find the user by ID
-    const user = await restaurantModel.findById(userId);
+      if (!user) {
+        return response.json({ success: false, message: "User not found." });
+      }
 
-    if (!user) {
-      return response.json({ success: false, message: "User not found." });
+      // Toggle the user status between 0 and 1
+      user.status = user.status === 1 ? 0 : 1;
+
+      // Save the updated user
+      const updatedUser = await user.save();
+
+      response.json({
+        success: true,
+        message: "User status updated successfully.",
+        updatedUser,
+      });
+    } catch (error) {
+      response.status(500).json({ error: "Internal server error." });
     }
-
-    // Toggle the user status between 0 and 1
-    user.status = user.status === 1 ? 0 : 1;
-
-    // Save the updated user
-    const updatedUser = await user.save();
-
-    response.json({ success: true, message: "User status updated successfully.", updatedUser });
-
-  } catch (error) {
-    response.status(500).json({ error: "Internal server error." });
   }
-});
-
-
-
-
-
-
+);

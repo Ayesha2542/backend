@@ -1,4 +1,3 @@
-
 const customReferences = require("../../references/customReferences");
 const customerModel=require("../../model/CustomerModel");
 const formData = customReferences.multer();
