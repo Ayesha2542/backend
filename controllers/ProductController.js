@@ -11,10 +11,12 @@ customReferences.app.post(
     try {
 
       const result = await productModel.create({
-        title: req.body.title,
-        description: req.body.description,
-        price: req.body.price,
+        productName: req.body.productName,
+        productDescription: req.body.productDescription,
+        productPrice: req.body.productPrice,
         productImage: "/Products/" + req.file.filename,
+        restaurant_id:req.body.restaurant_id,
+        categoryName:req.body.categoryName,
       });
 console.log(result);
 
@@ -39,17 +41,17 @@ async (req, res) => {
     if (req.files.length > 0) {
       obj = {
         _id: req.body.productId,
-        title: req.body.title,
-        description: req.body.description,
-        price: req.body.price,
+        productName: req.body.productName,
+        productDescription: req.body.productDescription,
+        productPrice: req.body.productPrice,
         productImage: "/Products/" + req.files[0].filename,  // <-- Add the missing forward slash here
       };
     } else {
       obj = {
         _id: req.body.productId,
-        title: req.body.title,
-        description: req.body.description,
-        price: req.body.price,
+        productName: req.body.productName,
+        productDescription: req.body.productDescription,
+        productPrice: req.body.productPrice,
       };
     }
     console.log(req.body);
@@ -67,21 +69,25 @@ async (req, res) => {
 });
 
 
-
-
-customReferences.app.post("/viewAllProducts", async (req, res) => {
+customReferences.app.post("/viewAllProducts/:restaurant_id/:categoryName", async (req, res) => {
+  const { restaurant_id, categoryName } = req.params; 
   try {
-    const allProducts = await productModel.find();
-  //   res.json(allCategories)
-    console.log("++++++++++++++++++++++++++++")
+    const allProducts = await productModel
+      .find({ restaurant_id: restaurant_id, categoryName: categoryName })
+      .populate('restaurant_id')
+      .populate('categoryName');
+
+    console.log("++++++++++++++++++++++++++++");
     console.log(allProducts);
-    console.log("++++++++++++++++++++++++++++")
-   res.json(allProducts)
+    console.log("++++++++++++++++++++++++++++");
+    res.json(allProducts);
   } catch (error) {
     console.error(error);
     res.status(500).send({ allProducts: [] });
   }
 });
+
+
 
 
 customReferences.app.delete("/deleteProduct/:delId", async (req, res) => {

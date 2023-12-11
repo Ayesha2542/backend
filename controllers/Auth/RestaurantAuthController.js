@@ -232,3 +232,14 @@ customReferences.app.put(
     }
   }
 );
+
+
+
+customReferences.app.post("/viewAllRestaurants", async (request, response) => {
+  try {
+    const users = await restaurantModel.find(); // Retrieve all Customers from MongoDB
+    response.json(users);
+  } catch (error) {
+    response.status(500).json({ error: "Internal server error." });
+  }
+});
