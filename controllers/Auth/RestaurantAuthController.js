@@ -68,6 +68,7 @@ customReferences.app.post(
       restaurantAddress,
       restaurantCategories,
       _id,
+      
   } = req.body;
       const imageName= req.file.filename;
       const rc = JSON.parse(restaurantCategories);
@@ -78,13 +79,12 @@ customReferences.app.post(
         { _id},
         {
           $set: {
-            restaurantImage:`/Restaurants/ ${imageName}`,
+            restaurantImage:"/Restaurants/" + req.file.filename,
             restaurantName,
             restaurantCnic,
             restaurantPhoneNumber,
             restaurantAddress,
             restaurantCategories:rc,
-           
           },
         },
         { new: true }
@@ -169,39 +169,6 @@ app.post("/forgetPassword", formData.none(), async (request, response) => {
   }
 });
 
-customReferences.app.post("/viewAllCustomers", async (request, response) => {
-  try {
-    const users = await restaurantModel.find(); // Retrieve all Customers from MongoDB
-    response.json(users);
-  } catch (error) {
-    response.status(500).json({ error: "Internal server error." });
-  }
-});
-
-customReferences.app.delete(
-  "/deleteCustomer/:customerId",
-  async (request, response) => {
-    try {
-      const { customerId } = request.params;
-
-      // Find and delete the customer by ID
-      const deletedCustomer = await restaurantModel.findByIdAndDelete(
-        customerId
-      );
-
-      if (deletedCustomer) {
-        response.json({
-          success: true,
-          message: "Customer deleted successfully.",
-        });
-      } else {
-        response.json({ success: false, message: "Customer not found." });
-      }
-    } catch (error) {
-      response.status(500).json({ error: "Internal server error." });
-    }
-  }
-);
 
 customReferences.app.put(
   "/toggleUserStatus/:userId",
@@ -241,5 +208,41 @@ customReferences.app.post("/viewAllRestaurants", async (request, response) => {
     response.json(users);
   } catch (error) {
     response.status(500).json({ error: "Internal server error." });
+  }
+});
+
+customReferences.app.post("/updateRestaurantProfile", 
+restaurantPicMW("Restaurants").any("restaurantImage"), 
+async (req, res) => {
+  try {
+    console.log(req.files);
+    let obj = {};
+    if (req.files.length > 0) {
+      obj = {
+        _id: req.body.userId,
+        userName: req.body.userName,
+        userEmail: req.body.userEmail,
+        restaurantPhoneNumber: req.body.restaurantPhoneNumber,
+        restaurantImage: "/Restaurants/" + req.files[0].filename,  // <-- Add the missing forward slash here
+      };
+    } else {
+      obj = {
+        _id: req.body.restuarantId,
+        userName: req.body.userName,
+        userEmail: req.body.userEmail,
+        restaurantPhoneNumber: req.body.restaurantPhoneNumber,
+      };
+    }
+    console.log(req.body);
+    const result = await restaurantModel.updateOne({ _id: obj._id }, { $set: obj });
+
+    if (result.modifiedCount === 1) {
+      res.json({ update: true });
+    } else {
+      res.json({ update: false, message: "No product was updated." });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ update: false, message: "Internal server error." });
   }
 });
