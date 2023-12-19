@@ -2,8 +2,7 @@ const customReferences = require("../../references/customReferences");
 const restaurantModel = require("../../model/restaurantModel");
 const bcrypt = require("bcrypt");
 const formData = customReferences.multer();
- const restaurantPicMW = require("../../MiddleWare/restaurantPicMW");
-
+const restaurantPicMW = require('../../MiddleWare/restaurantPicMW');
 customReferences.app.post(
   "/restaurantSignup",
   formData.none(),
@@ -59,48 +58,77 @@ customReferences.app.post(
 // Route to save security questions and uploaded profile image
 customReferences.app.post(
   "/restaurantDetail",
-  restaurantPicMW("Restaurants").single("restaurantImage"), // Check the field name here
+  restaurantPicMW(),
   async (req, res) => {
-    const {
-      restaurantName,
-      restaurantCnic,
-      restaurantPhoneNumber,
-      restaurantAddress,
-      restaurantCategories,
-      _id,
-      
-  } = req.body;
-      const imageName= req.file.filename;
-      const rc = JSON.parse(restaurantCategories);
-    console.log("registeredUser", req.body);
-
     try {
+      const {
+        restaurantName,
+        restaurantAddress,
+        restaurantPhoneNumber,
+        restaurantCategories,
+        _id,
+      } = req.body;
+
+      // Check if req.files is defined
+      if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).json({ error: 'No files were uploaded.' });
+      }
+
+      // Process the image file
+      const restaurantImageFilename = req.files['restaurantImage'][0].filename;
+
+      // Process the PDF document
+      const certificateDocumentFilename = req.files['certificateDocument'][0].filename;
+
+      const rc = JSON.parse(restaurantCategories);
+
+      console.log("Received data:", {
+        restaurantName,
+        restaurantPhoneNumber,
+        restaurantAddress,
+        restaurantCategories,
+        _id,
+        restaurantImage: restaurantImageFilename,
+        certificateDocument: certificateDocumentFilename,
+      });
+
+      // Update the user in the database with the new restaurantImage and certificateDocument
       const user = await restaurantModel.findOneAndUpdate(
-        { _id},
+        { _id },
         {
           $set: {
-            restaurantImage:"/Restaurants/" + req.file.filename,
             restaurantName,
-            restaurantCnic,
             restaurantPhoneNumber,
             restaurantAddress,
-            restaurantCategories:rc,
+            restaurantCategories: rc,
+            restaurantImage: `/restaurantImage/${restaurantImageFilename}`,
+            certificateDocument: `/certificateDocument/${certificateDocumentFilename}`,
           },
         },
         { new: true }
       );
-      console.log("777777777777777777777777777")
-    console.log(user)
+
+      console.log("Updated user:", user);
+
       if (user) {
-        res.json({ message: "Data saved successfully", registeredUser: user });
+        res.json({
+          message: "Data saved successfully",
+          registeredUser: user,
+        });
       } else {
         res.status(500).json({ error: "Failed to save user data" });
       }
     } catch (error) {
+      console.error("Error:", error);
+
+      // Handle the error appropriately
       res.status(500).json({ error: error.message });
     }
   }
 );
+
+
+
 
 customReferences.app.post(
   "/restaurantLogin",
@@ -169,15 +197,25 @@ app.post("/forgetPassword", formData.none(), async (request, response) => {
   }
 });
 
+customReferences.app.post("/viewAllRestaurants", async (request, response) => {
+  try {
+    const users = await restaurantModel.find(); // Retrieve all Customers from MongoDB
+    response.json(users);
+  } catch (error) {
+    response.status(500).json({ error: "Internal server error." });
+  }
+});
+
+
 
 customReferences.app.put(
-  "/toggleUserStatus/:userId",
+  "/toggleRestaurantStatus/:restaurantId",
   async (request, response) => {
     try {
-      const { userId } = request.params;
+      const { restaurantId } = request.params;
 
       // Find the user by ID
-      const user = await restaurantModel.findById(userId);
+      const user = await restaurantModel.findById(restaurantId);
 
       if (!user) {
         return response.json({ success: false, message: "User not found." });
@@ -202,47 +240,3 @@ customReferences.app.put(
 
 
 
-customReferences.app.post("/viewAllRestaurants", async (request, response) => {
-  try {
-    const users = await restaurantModel.find(); // Retrieve all Customers from MongoDB
-    response.json(users);
-  } catch (error) {
-    response.status(500).json({ error: "Internal server error." });
-  }
-});
-
-customReferences.app.post("/updateRestaurantProfile", 
-restaurantPicMW("Restaurants").any("restaurantImage"), 
-async (req, res) => {
-  try {
-    console.log(req.files);
-    let obj = {};
-    if (req.files.length > 0) {
-      obj = {
-        _id: req.body.userId,
-        userName: req.body.userName,
-        userEmail: req.body.userEmail,
-        restaurantPhoneNumber: req.body.restaurantPhoneNumber,
-        restaurantImage: "/Restaurants/" + req.files[0].filename,  // <-- Add the missing forward slash here
-      };
-    } else {
-      obj = {
-        _id: req.body.restuarantId,
-        userName: req.body.userName,
-        userEmail: req.body.userEmail,
-        restaurantPhoneNumber: req.body.restaurantPhoneNumber,
-      };
-    }
-    console.log(req.body);
-    const result = await restaurantModel.updateOne({ _id: obj._id }, { $set: obj });
-
-    if (result.modifiedCount === 1) {
-      res.json({ update: true });
-    } else {
-      res.json({ update: false, message: "No product was updated." });
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ update: false, message: "Internal server error." });
-  }
-});
