@@ -1,21 +1,27 @@
 const customReferences = require("../references/customReferences");
-const restaurantPicMW =(folderName)=>{ 
-  return( customReferences
-  .multer({
-    storage: customReferences.multer.diskStorage({
-      destination: (req, file, cb) => {
-        cb(null, `./public/assets/images/${folderName}`);
-      },
-      filename: (req, file, cb) => {
-        const now = Date.now();
-        console.log("Multer console")
-        console.log(req.body)
-        console.log("//////////////")
-        console.log(file)
-        cb(null, `${file.fieldname}${now}.jpg`);
-      },
-    }),
-  })
-  )
-}
+
+// Middleware function
+const restaurantPicMW = () => {
+  // Define your storage configuration for multer
+  const storage = customReferences.multer.diskStorage({
+    destination: function (req, file, cb) {
+      const folderName = file.fieldname === 'certificateDocument' ? 'certificateDocument' : 'restaurantImage';
+      cb(null, `./public/assets/images/${folderName}`);
+    },
+    filename: function (req, file, cb) {
+      const now = Date.now();
+      const fileExtension = file.fieldname === 'certificateDocument' ? 'pdf' : 'jpg';
+      cb(null, `${file.fieldname}${now}.${fileExtension}`);
+    },
+  });
+
+  // Create multer instance with your storage configuration
+  const upload = customReferences.multer({ storage: storage });
+
+  return upload.fields([
+    { name: 'certificateDocument', maxCount: 1 },
+    { name: 'restaurantImage', maxCount: 1 },
+  ]);
+};
+
 module.exports = restaurantPicMW;

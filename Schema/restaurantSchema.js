@@ -6,9 +6,10 @@ const restaurantSchema = customReferences.mongoose.Schema({
   userPassword: String,
   restaurantImage: String, 
   restaurantName: String,
-  restaurantCnic: String,
-  restaurantPhoneNumber:String,
   restaurantAddress:String,
+  // restaurantCnic: String,
+  restaurantPhoneNumber:String,
+  certificateDocument: String,
   restaurantCategories:{
     type:Array
   },
