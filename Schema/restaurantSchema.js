@@ -12,6 +12,9 @@ const restaurantSchema = customReferences.mongoose.Schema({
   restaurantCategories:{
     type:Array
   },
+  securityQuestions: {
+    type:Array
+  },
   status:{type:Number,default:1} ,// Assuming this is the path to the profile image
   restaurant_id:{
     type:customReferences.mongoose.Schema.Types.ObjectId,

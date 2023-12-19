@@ -2,7 +2,7 @@ const customReferences = require("../../references/customReferences");
 const restaurantModel = require("../../model/restaurantModel");
 const bcrypt = require("bcrypt");
 const formData = customReferences.multer();
- const restaurantPicMW = require("../../MiddleWare/restaurantPicMW");
+const restaurantPicMW = require("../../MiddleWare/restaurantPicMW");
 
 customReferences.app.post(
   "/restaurantSignup",
@@ -24,7 +24,7 @@ customReferences.app.post(
           message: "A user with the same email already exists.",
         });
       }
-      console.log("check if user exists", existingUser); 
+      console.log("check if user exists", existingUser);
 
       // Hash the password before saving
       const hashedPassword = await bcrypt.hash(userPassword, 10);
@@ -68,29 +68,56 @@ customReferences.app.post(
       restaurantAddress,
       restaurantCategories,
       _id,
-      
-  } = req.body;
-      const imageName= req.file.filename;
-      const rc = JSON.parse(restaurantCategories);
+    } = req.body;
+    const imageName = req.file.filename;
+    const rc = JSON.parse(restaurantCategories);
     console.log("registeredUser", req.body);
 
     try {
       const user = await restaurantModel.findOneAndUpdate(
-        { _id},
+        { _id },
         {
           $set: {
-            restaurantImage:"/Restaurants/" + req.file.filename,
+            restaurantImage: "/Restaurants/" + req.file.filename,
             restaurantName,
             restaurantCnic,
             restaurantPhoneNumber,
             restaurantAddress,
-            restaurantCategories:rc,
+            restaurantCategories: rc,
           },
         },
         { new: true }
       );
-      console.log("777777777777777777777777777")
-    console.log(user)
+      console.log("777777777777777777777777777");
+      console.log(user);
+      if (user) {
+        res.json({ message: "Data saved successfully", registeredUser: user });
+      } else {
+        res.status(500).json({ error: "Failed to save user data" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+customReferences.app.post(
+  "/securityQuestions",
+  formData.none(),
+  async (req, res) => {
+    const { securityQuestions, _id } = req.body;
+    const sq = JSON.parse(securityQuestions);
+
+    try {
+      const user = await restaurantModel.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            securityQuestions: sq,
+          },
+        },
+        { new: true }
+      );
+      console.log(user);
       if (user) {
         res.json({ message: "Data saved successfully", registeredUser: user });
       } else {
@@ -110,11 +137,14 @@ customReferences.app.post(
       const { userEmail, userPassword } = request.body;
 
       // Find the user by emai
-      const user = await restaurantModel.findOne({ userEmail: userEmail});
+      const user = await restaurantModel.findOne({ userEmail: userEmail });
       console.log("user", user);
       if (user) {
         // Compare the provided password with the stored hashed password
-        const isPasswordMatch = await bcrypt.compare(userPassword, user.userPassword);
+        const isPasswordMatch = await bcrypt.compare(
+          userPassword,
+          user.userPassword
+        );
 
         if (isPasswordMatch) {
           response.json({ match: true, loggedInUser: user });
@@ -132,43 +162,90 @@ customReferences.app.post(
 //++++++++++++++++++++++++forget password++++++++++++++++++++++++++++++++++++\
 
 // Assume you have an express app instance
-const app = customReferences.app;
+customReferences.app.post(
+  "/restaurantForgetPassword",
+  formData.none(),
+  async (req, res) => {
+    console.log(req.body);
+    console.log("signupsq req", JSON.parse(req.body.securityQuestions));
+    try {
+      const providedAnswers = await JSON.parse(req.body.securityQuestions);
 
-app.post("/forgetPassword", formData.none(), async (request, response) => {
-  try {
-    const { email, firstSecurityAnswer, secondSecurityAnswer } = request.body;
-
-    // Check if a user with the provided email exists
-    const user = await restaurantModel.findOne({ email: email });
-
-    if (!user) {
-      return response.json({
-        success: false,
-        message: "User not found with the provided email.",
+      const result = await restaurantModel.findOne({
+        userEmail: req.body.userEmail,
       });
-    }
 
-    // Check if security answers match
-    if (
-      user.securityQuestions[0].answer !== firstSecurityAnswer ||
-      user.securityQuestions[1].answer !== secondSecurityAnswer
-    ) {
-      return response.json({
-        success: false,
-        message: "Security answers do not match.",
-      });
-    }
+      if (!result) {
+        return res.json({ matched: false, error: "User not found" });
+      } else {
+        const storedAnswers = result.securityQuestions;
+        console.log("storedAnswer", storedAnswers);
+        const isAnswersMatching = storedAnswers.every((stored, index) => {
+          return (
+            stored.question === providedAnswers[index].question &&
+            stored.answer === providedAnswers[index].answer
+          );
+        });
+        console.log(isAnswersMatching);
 
-    // If everything is correct, send a success response
-    response.json({
-      success: true,
-      message: "Security answers matched. Proceed to change password.",
-    });
-  } catch (error) {
-    response.status(500).json({ error: "Internal server error." });
+        if (isAnswersMatching) {
+          // Answers match, proceed with password reset or other actions
+          res.json({ matched: true, newUser: result });
+        } else {
+          // Answers do not match
+          res.json({ matched: false, newUser: result });
+        }
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ matched: false, error: "An error occurred" });
+    }
   }
-});
+);
 
+customReferences.app.post(
+  "/restaurantResetPassword",
+  formData.none(),
+  async (req, res) => {
+    console.log("resetPassword", req.body);
+    const { userEmail, userPassword } = req.body;
+    const hashedPassword = await bcrypt.hash(userPassword, 10);
+
+    try {
+      const existingUser = await restaurantModel.findOne({
+        userEmail: req.body.userEmail,
+      });
+      console.log("existuserchngepswrd", existingUser);
+      if (!existingUser) {
+        return res.json({
+          login: false,
+          message: "This user is not available.",
+        });
+      } else {
+        const user = await restaurantModel.findOneAndUpdate(
+          { userEmail },
+          { $set: { userPassword: hashedPassword } },
+          { new: true }
+        );
+        console.log("chngepassword", user);
+        if (!user) {
+          return res
+            .status(404)
+            .json({ login: false, message: "User not found" });
+        }
+        res
+          .status(200)
+          .json({
+            login: true,
+            message: "Password updated successfully",
+            updated: user,
+          });
+      }
+    } catch (error) {
+      res.status(500).json({ login: false, message: "An error occurred" });
+    }
+  }
+);
 
 customReferences.app.put(
   "/toggleUserStatus/:userId",
@@ -200,8 +277,6 @@ customReferences.app.put(
   }
 );
 
-
-
 customReferences.app.post("/viewAllRestaurants", async (request, response) => {
   try {
     const users = await restaurantModel.find(); // Retrieve all Customers from MongoDB
@@ -211,38 +286,72 @@ customReferences.app.post("/viewAllRestaurants", async (request, response) => {
   }
 });
 
-customReferences.app.post("/updateRestaurantProfile", 
-restaurantPicMW("Restaurants").any("restaurantImage"), 
-async (req, res) => {
+customReferences.app.post("/updateRestaurantProfile", formData.none(), async (req, res) => {
+  console.log("profileData", req.body);
+  const { userName, userEmail, _id, restaurantPhoneNumber } = req.body;
+  
   try {
-    console.log(req.files);
-    let obj = {};
-    if (req.files.length > 0) {
-      obj = {
-        _id: req.body.userId,
-        userName: req.body.userName,
-        userEmail: req.body.userEmail,
-        restaurantPhoneNumber: req.body.restaurantPhoneNumber,
-        restaurantImage: "/Restaurants/" + req.files[0].filename,  // <-- Add the missing forward slash here
-      };
-    } else {
-      obj = {
-        _id: req.body.restuarantId,
-        userName: req.body.userName,
-        userEmail: req.body.userEmail,
-        restaurantPhoneNumber: req.body.restaurantPhoneNumber,
-      };
+    // Check if the updated email already exists
+    const existingUser = await restaurantModel.findOne({ userEmail });
+    
+    if (existingUser && existingUser._id.toString() !== _id) {
+      // If the email exists and belongs to a different user, return an error
+      return res.status(400).json({ error: "Email is already in use by another user" });
     }
-    console.log(req.body);
-    const result = await restaurantModel.updateOne({ _id: obj._id }, { $set: obj });
 
-    if (result.modifiedCount === 1) {
-      res.json({ update: true });
+    // Update the user details
+    const user = await restaurantModel.findOneAndUpdate(
+      { _id },
+      {
+        $set: {
+          userName: userName,
+          userEmail: userEmail,
+          restaurantPhoneNumber: restaurantPhoneNumber
+        },
+      },
+      { new: true }
+    );
+
+    console.log('updatedUser', user);
+
+    if (user) {
+      res.json({ message: "Data saved successfully", updatedUser: user });
     } else {
-      res.json({ update: false, message: "No product was updated." });
+      res.status(500).json({ error: "Failed to save user data" });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ update: false, message: "Internal server error." });
+    res.status(500).json({ error: error.message });
   }
 });
+
+
+customReferences.app.post(
+  "/updateRestaurantImage",
+  restaurantPicMW("Restaurants").single("restaurantImage"), // Check the field name here
+  async (req, res) => {
+    console.log("profileData to update image", req.body);
+    const imgName = req.file.filename;
+    const { _id } = req.body;
+
+
+    try {
+      const user = await restaurantModel.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            restaurantImage: `/Restaurants/${imgName}`,
+          },
+        },
+        { new: true }
+      );
+console.log('updatedUser',user)
+      if (user) {
+        res.json({ message: "Data saved successfully" ,updatedUser:user});
+      } else {
+        res.status(500).json({ error: "Failed to save user data" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
