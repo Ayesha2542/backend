@@ -10,6 +10,7 @@ const foodDealSchema = customReferences.mongoose.Schema({
   foodDealDescription: String,
   foodDealPrice: String,
   foodDealImage: String,
+  
   // foodDealDiscount:String,
 });
 
