@@ -1,5 +1,13 @@
 const customReferences = require('../references/customReferences');
 
+const addressSchema = customReferences.mongoose.Schema({
+  formattedAddress:String,
+  streetName: String,
+  elaqa: String,
+  locality: String,
+  label:String,
+  // Add other fields for the address as needed
+});
 const customerSchema = customReferences.mongoose.Schema({
   name: String,
   email: String,
@@ -9,6 +17,10 @@ const customerSchema = customReferences.mongoose.Schema({
   securityQuestions: {
     type:Array
   },
+  // addresses:{
+  //   type:Array
+  // },
+  addresses: [addressSchema], // Use the address schema for the array
   phoneNumber:String,
   user_id:{
     type:customReferences.mongoose.Schema.Types.ObjectId,
@@ -20,5 +32,6 @@ const customerSchema = customReferences.mongoose.Schema({
 });
 
 module.exports= {
-     customerSchema :customerSchema
+     
+  customerSchema :customerSchema
 }
