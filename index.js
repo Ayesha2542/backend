@@ -6,5 +6,5 @@ require('./controllers/CategoriesController');
 require('./controllers/Auth/subAdminController');
 require('./controllers/Auth/RestaurantAuthController');
 require('./controllers/ProductController');
-
+require('./controllers/DonorController');
 customReferences.app.listen(8888);
