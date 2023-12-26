@@ -11,15 +11,11 @@ customReferences.app.post(
     imageUploadMW("Categories").single("categoryImage"),
     async (req, res) => {
       try {
-        console.log(req.file);
-        console.log(req.body);
         
         const result = await categoryModel.create({
           title: req.body.title,
           categoryImage: "/Categories/" + req.file.filename,
         });
-
-        console.log(result);
 
         if (result) {
           res.send({ added: true });
@@ -95,10 +91,6 @@ customReferences.app.post(
   customReferences.app.post("/viewAllCategories", async (req, res) => {
     try {
       const allCategories = await categoryModel.find();
-    //   res.json(allCategories)
-      console.log("++++++++++++++++++++++++++++")
-      console.log(allCategories);
-      console.log("++++++++++++++++++++++++++++")
      res.json(allCategories)
     } catch (error) {;
       console.error(error);

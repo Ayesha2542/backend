@@ -87,7 +87,22 @@ customReferences.app.post("/viewAllProducts/:restaurant_id/:categoryName", async
   }
 });
 
+customReferences.app.post("/viewAll/:restaurant_id", async (req, res) => {
+  const {restaurant_id} = req.params; 
+  try {
+    const all = await productModel
+      .find({restaurant_id:restaurant_id})
+      .populate('restaurant_id')
 
+    console.log("++++++++++++++++++++++++++++");
+    console.log(all);
+    console.log("++++++++++++++++++++++++++++");
+    res.json(all);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ all: [] });
+  }
+});
 
 
 customReferences.app.delete("/deleteProduct/:delId", async (req, res) => {

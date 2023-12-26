@@ -9,7 +9,11 @@ const restaurantSchema = customReferences.mongoose.Schema({
   restaurantAddress:String,
   // restaurantCnic: String,
   restaurantPhoneNumber:String,
-  certificateDocument: String,
+  certificateDocument: {
+    type: String,
+    default: null, // or whatever default value you want
+  },
+  
   restaurantCategories:{
     type:Array
   },

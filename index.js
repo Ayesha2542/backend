@@ -7,5 +7,7 @@ require('./controllers/Auth/subAdminController');
 require('./controllers/Auth/RestaurantAuthController');
 require('./controllers/ProductController');
 require('./controllers/NotificationsController');
-
+require('./controllers/CartController');
+require('./controllers/ShareFoodController');
+require('./controllers/FoodDealController');
 customReferences.app.listen(8888);

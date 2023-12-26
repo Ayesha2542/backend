@@ -73,12 +73,12 @@ customReferences.app.post(
       if (!req.files || Object.keys(req.files).length === 0) {
         return res.status(400).json({ error: 'No files were uploaded.' });
       }
+      const restaurantImageFilename = req.files && req.files['restaurantImage'] && req.files['restaurantImage'][0] ? req.files['restaurantImage'][0].filename : null;
+      const certificateDocumentFilename = req.files && req.files['certificateDocument'] && req.files['certificateDocument'][0] ? req.files['certificateDocument'][0].filename : null;
+      
 
-      // Process the image file
-      const restaurantImageFilename = req.files['restaurantImage'][0].filename;
-
-      // Process the PDF document
-      const certificateDocumentFilename = req.files['certificateDocument'][0].filename;
+console.log('req.files:', req.files);
+console.log('req.files[certificateDocument]:', req.files['certificateDocument']);
 
       const rc = JSON.parse(restaurantCategories);
 
@@ -328,7 +328,7 @@ customReferences.app.post("/updateRestaurantProfile", formData.none(), async (re
 
 customReferences.app.post(
   "/updateRestaurantImage",
-  restaurantPicMW("Restaurants").single("restaurantImage"), // Check the field name here
+  restaurantPicMW("Restaurants"), // Check the field name here
   async (req, res) => {
     console.log("profileData to update image", req.body);
     const imgName = req.file.filename;
