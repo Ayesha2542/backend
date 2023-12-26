@@ -9,8 +9,15 @@ const restaurantSchema = customReferences.mongoose.Schema({
   restaurantAddress:String,
   // restaurantCnic: String,
   restaurantPhoneNumber:String,
-  certificateDocument: String,
+  certificateDocument: {
+    type: String,
+    default: null, // or whatever default value you want
+  },
+  
   restaurantCategories:{
+    type:Array
+  },
+  securityQuestions: {
     type:Array
   },
   status:{type:Number,default:1} ,// Assuming this is the path to the profile image

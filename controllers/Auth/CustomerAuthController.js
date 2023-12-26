@@ -312,6 +312,17 @@ customReferences.app.put(
     try {
       const { userId } = request.params;
 
+
+customReferences.app.put("/toggleUserStatus/:userId", async (request, response) => {
+  try {
+    const { userId } = request.params;
+    const user = await customerModel.findById(userId);
+    if (!user) {
+      return response.json({ success: false, message: "User not found." });
+    }
+    // Toggle the user status between 0 and 1
+    user.status = user.status === 1 ? 0 : 1;
+
       // Find the user by ID
       const user = await customerModel.findById(userId);
 
@@ -324,6 +335,7 @@ customReferences.app.put(
 
       // Save the updated user
       const updatedUser = await user.save();
+
 
       response.json({
         success: true,
@@ -363,6 +375,8 @@ customReferences.app.post("/saveAddress", formData.none(), async (req, res) => {
   }
 });
 
+
+
 customReferences.app.delete('/deleteAddress', formData.none(), async (req, res) => {
   try {
     const { deletedAddressId, _id } = req.body;
@@ -387,6 +401,7 @@ customReferences.app.delete('/deleteAddress', formData.none(), async (req, res) 
 });
 
 // const jwt = require('jsonwebtoken');
+
 
 // const authenticateUser = (req, res, next) => {
 //   const token = req.header('Authorization');
