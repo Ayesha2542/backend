@@ -306,23 +306,10 @@ customReferences.app.delete(
   }
 );
 
-customReferences.app.put(
-  "/toggleUserStatus/:userId",
-  async (request, response) => {
-    try {
-      const { userId } = request.params;
-
-
 customReferences.app.put("/toggleUserStatus/:userId", async (request, response) => {
   try {
     const { userId } = request.params;
-    const user = await customerModel.findById(userId);
-    if (!user) {
-      return response.json({ success: false, message: "User not found." });
-    }
-    // Toggle the user status between 0 and 1
-    user.status = user.status === 1 ? 0 : 1;
-
+   
       // Find the user by ID
       const user = await customerModel.findById(userId);
 
