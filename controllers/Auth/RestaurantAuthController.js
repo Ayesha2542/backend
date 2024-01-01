@@ -2,8 +2,7 @@ const customReferences = require("../../references/customReferences");
 const restaurantModel = require("../../model/restaurantModel");
 const bcrypt = require("bcrypt");
 const formData = customReferences.multer();
- const restaurantPicMW = require("../../MiddleWare/restaurantPicMW");
-
+const restaurantPicMW = require('../../MiddleWare/restaurantPicMW');
 customReferences.app.post(
   "/restaurantSignup",
   formData.none(),
@@ -59,48 +58,77 @@ customReferences.app.post(
 // Route to save security questions and uploaded profile image
 customReferences.app.post(
   "/restaurantDetail",
-  restaurantPicMW("Restaurants").single("restaurantImage"), // Check the field name here
+  restaurantPicMW(),
   async (req, res) => {
-    const {
-      restaurantName,
-      restaurantCnic,
-      restaurantPhoneNumber,
-      restaurantAddress,
-      restaurantCategories,
-      _id,
-  } = req.body;
-      const imageName= req.file.filename;
-      const rc = JSON.parse(restaurantCategories);
-    console.log("registeredUser", req.body);
-
     try {
+      const {
+        restaurantName,
+        restaurantAddress,
+        restaurantPhoneNumber,
+        restaurantCategories,
+        _id,
+      } = req.body;
+
+      // Check if req.files is defined
+      if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).json({ error: 'No files were uploaded.' });
+      }
+
+      // Process the image file
+      const restaurantImageFilename = req.files['restaurantImage'][0].filename;
+
+      // Process the PDF document
+      const certificateDocumentFilename = req.files['certificateDocument'][0].filename;
+
+      const rc = JSON.parse(restaurantCategories);
+
+      console.log("Received data:", {
+        restaurantName,
+        restaurantPhoneNumber,
+        restaurantAddress,
+        restaurantCategories,
+        _id,
+        restaurantImage: restaurantImageFilename,
+        certificateDocument: certificateDocumentFilename,
+      });
+
+      // Update the user in the database with the new restaurantImage and certificateDocument
       const user = await restaurantModel.findOneAndUpdate(
-        { _id},
+        { _id },
         {
           $set: {
-            restaurantImage:`/Restaurants/ ${imageName}`,
             restaurantName,
-            restaurantCnic,
             restaurantPhoneNumber,
             restaurantAddress,
-            restaurantCategories:rc,
-           
+            restaurantCategories: rc,
+            restaurantImage: `/restaurantImage/${restaurantImageFilename}`,
+            certificateDocument: `/certificateDocument/${certificateDocumentFilename}`,
           },
         },
         { new: true }
       );
-      console.log("777777777777777777777777777")
-    console.log(user)
+
+      console.log("Updated user:", user);
+
       if (user) {
-        res.json({ message: "Data saved successfully", registeredUser: user });
+        res.json({
+          message: "Data saved successfully",
+          registeredUser: user,
+        });
       } else {
         res.status(500).json({ error: "Failed to save user data" });
       }
     } catch (error) {
+      console.error("Error:", error);
+
+      // Handle the error appropriately
       res.status(500).json({ error: error.message });
     }
   }
 );
+
+
+
 
 customReferences.app.post(
   "/restaurantLogin",
@@ -169,7 +197,7 @@ app.post("/forgetPassword", formData.none(), async (request, response) => {
   }
 });
 
-customReferences.app.post("/viewAllCustomers", async (request, response) => {
+customReferences.app.post("/viewAllRestaurants", async (request, response) => {
   try {
     const users = await restaurantModel.find(); // Retrieve all Customers from MongoDB
     response.json(users);
@@ -178,39 +206,16 @@ customReferences.app.post("/viewAllCustomers", async (request, response) => {
   }
 });
 
-customReferences.app.delete(
-  "/deleteCustomer/:customerId",
-  async (request, response) => {
-    try {
-      const { customerId } = request.params;
 
-      // Find and delete the customer by ID
-      const deletedCustomer = await restaurantModel.findByIdAndDelete(
-        customerId
-      );
-
-      if (deletedCustomer) {
-        response.json({
-          success: true,
-          message: "Customer deleted successfully.",
-        });
-      } else {
-        response.json({ success: false, message: "Customer not found." });
-      }
-    } catch (error) {
-      response.status(500).json({ error: "Internal server error." });
-    }
-  }
-);
 
 customReferences.app.put(
-  "/toggleUserStatus/:userId",
+  "/toggleRestaurantStatus/:restaurantId",
   async (request, response) => {
     try {
-      const { userId } = request.params;
+      const { restaurantId } = request.params;
 
       // Find the user by ID
-      const user = await restaurantModel.findById(userId);
+      const user = await restaurantModel.findById(restaurantId);
 
       if (!user) {
         return response.json({ success: false, message: "User not found." });
@@ -232,3 +237,6 @@ customReferences.app.put(
     }
   }
 );
+
+
+
