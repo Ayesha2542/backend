@@ -5,32 +5,117 @@ const bcrypt = require("bcrypt");
 const cartProductImageMW=require('../MiddleWare/cartProductImageMW')
 
 
+// cartController.js
 customReferences.app.post(
-    "/addCartProducts",
-    cartProductImageMW("cartProducts").single("productImage"),
-    async (req, res) => {
-      console.log('req.boy',req.body)
-      try {
-        
-        const result = await cartModel.create({
+  "/addCartProducts",
+  cartProductImageMW("cartProducts").single("productImage"),
+  async (req, res) => {
+    try {
+      // Ensure req.body and its properties are defined
+
+      const existingProduct = await cartModel.findOne({
+        customer_id: req.body.customer_id,
+        productName: req.body.productName,
+      });
+
+      if (existingProduct) {
+        // If the product is already in the cart, update the quantity
+        if (req.body.qty && parseInt(req.body.qty) > 0) {
+          existingProduct.qty += parseInt(req.body.qty);
+        } else {
+          existingProduct.qty += 1;
+        }
+
+        existingProduct.productPrice = (
+          parseFloat(existingProduct.productPrice) * existingProduct.qty
+        ).toString();
+
+        await existingProduct.save();
+        res.send({ added: true });
+      } else {
+        // If the product is not in the cart, create a new entry
+        const newProduct = {
+          customer_id: req.body.customer_id,
           productName: req.body.productName,
-          productImage: "/cartProducts/" + req.file.filename,
           productPrice: req.body.productPrice.toString(),
-          customer_id:  req.body.customer_id
-        });
-        
+          pricePerProduct:req.body.pricePerProduct
+        };
+
+        if (req.file) {
+          newProduct.productImage = "/cartProducts/" + req.file.filename;
+        }
+
+        const result = await cartModel.create(newProduct);
 
         if (result) {
           res.send({ added: true });
         } else {
           res.send({ added: false });
         }
-      } catch (error) {
-        console.error("No product added to cart");
-        res.status(500).send({ added: false });
       }
+    } catch (error) {
+      console.error("Error adding product to cart:", error);
+      res.status(500).send({ added: false, error: 'Internal server error' });
     }
+  }
 );
+
+
+customReferences.app.post("/incrementCartProduct/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const product = await cartModel.findById(productId);
+
+    if (product) {
+      product.qty += 1;
+      product.productPrice = (parseFloat(product.pricePerProduct) * product.qty).toString();
+
+      await product.save();
+      res.send({ updated: true });
+    } else {
+      res.send({ updated: false, error: 'Product not found' });
+    }
+  } catch (error) {
+    console.error("Error incrementing product quantity:", error);
+    res.status(500).send({ updated: false, error: 'Internal server error' });
+  }
+});
+
+customReferences.app.post("/decrementCartProduct/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const product = await cartModel.findById(productId);
+
+    if (product) {
+      if (product.qty > 1) {
+        product.qty -= 1;
+        product.productPrice = (parseFloat(product.pricePerProduct) * product.qty).toString();
+
+        await product.save();
+        res.send({ updated: true });
+      } else {
+        // If the quantity is 1, delete the product
+        const result = await cartModel.findByIdAndDelete(productId);
+
+        if (result) {
+          res.send({ updated: true, deleted: true });
+        } else {
+          res.send({ updated: false, deleted: false, error: 'Product not found' });
+        }
+      }
+    } else {
+      res.send({ updated: false, deleted: false, error: 'Product not found' });
+    }
+  } catch (error) {
+    console.error("Error decrementing product quantity:", error);
+    res.status(500).send({ updated: false, deleted: false, error: 'Internal server error' });
+  }
+});
+
+
+
+
+
 
 customReferences.app.post("/viewAllCartsProduct/:customer_id", async (req, res) => {
   const {customer_id} = req.params; 
