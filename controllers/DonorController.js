@@ -8,7 +8,7 @@ customReferences.app.post(
   async (request, response) => {
     try {
       const { donorName, donorPhoneNumber, foodDetails, distributionLocation, distributionDateTime ,userId} = request.body;
-
+console.log('donatedData',request.body)
       // Create a new donor model
       const newDonor = new donorModel({
         donorName,
