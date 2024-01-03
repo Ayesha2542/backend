@@ -2,6 +2,14 @@ const customReferences = require('../references/customReferences');
 
 // cartSchema.js
 const cartSchema = customReferences.mongoose.Schema({
+  productId:{
+    type: customReferences.mongoose.Schema.Types.ObjectId,
+    ref: "products",
+  },
+  restaurant_id:{
+    type: customReferences.mongoose.Schema.Types.ObjectId,
+    ref: "restaurants",
+  },
   productName: String,
   productPrice: String,
   productImage: String,

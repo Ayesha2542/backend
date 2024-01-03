@@ -11,5 +11,6 @@ require('./controllers/NotificationsController');
 require('./controllers/CartController');
 require('./controllers/ShareFoodController');
 require('./controllers/FoodDealController');
+require('./controllers/OrderController');
 
 customReferences.app.listen(8888);
