@@ -27,7 +27,7 @@ customReferences.app.post(
         }
 
         existingProduct.productPrice = (
-          parseFloat(existingProduct.productPrice) * existingProduct.qty
+          parseFloat(existingProduct.pricePerProduct) * existingProduct.qty
         ).toString();
 
         await existingProduct.save();
@@ -35,10 +35,13 @@ customReferences.app.post(
       } else {
         // If the product is not in the cart, create a new entry
         const newProduct = {
+          productId:req.body.productId,
           customer_id: req.body.customer_id,
+          restaurant_id:req.body.restaurant_id,
           productName: req.body.productName,
           productPrice: req.body.productPrice.toString(),
           pricePerProduct:req.body.pricePerProduct
+          
         };
 
         if (req.file) {
@@ -64,6 +67,7 @@ customReferences.app.post(
 customReferences.app.post("/incrementCartProduct/:productId", async (req, res) => {
   try {
     const { productId } = req.params;
+    console.log('productId',productId)
     const product = await cartModel.findById(productId);
 
     if (product) {
