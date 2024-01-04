@@ -1,4 +1,4 @@
-const customReferences = require('../references/customReferences');
+const customReferences = require("../references/customReferences");
 
 // const addressSchema = customReferences.mongoose.Schema({
 //   formattedAddress:String,
@@ -12,21 +12,19 @@ const donorSchema = customReferences.mongoose.Schema({
   donorName: String,
   foodDetails: String,
   distributionLocation: String,
-  distributionDateTime: String, 
+  distributionDateTime: String,
 
-//   addresses: [addressSchema], // Use the address schema for the array
-  donorPhoneNumber:String,
-  userId: String, // Add this field
+  donorPhoneNumber: String,
+  userId: {
+     type: customReferences.mongoose.Schema.Types.ObjectId
+    
+    }
   // user_id:{
   //   type:customReferences.mongoose.Schema.Types.ObjectId,
-    
-// },
 
-
-
+  // },
 });
 
-module.exports= {
-     
-  donorSchema :donorSchema
-}
+module.exports = {
+  donorSchema: donorSchema,
+};
